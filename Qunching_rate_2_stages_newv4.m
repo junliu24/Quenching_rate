@@ -1,7 +1,7 @@
 clear
 load blank_temperature.mat
 format long
-critical_Ti=488; %% Blank temperature after being transfered to tool (transfer time about 8 s)
+critical_Ti=492; %% Blank temperature after being transfered to tool (transfer time about 8 s)
 critical_Tm=340;  %% CCT curve precipitation start temperature
 critical_Tf=250;  %% precipitation ending temperature
 critical_qunching_rate1=-35;
