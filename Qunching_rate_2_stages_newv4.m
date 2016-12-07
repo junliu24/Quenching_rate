@@ -1,18 +1,35 @@
 clear
 load blank_temperature.mat
 format long
-critical_Ti=492; %% Blank temperature after being transfered to tool (transfer time about 8 s)
-critical_Tm=340;  %% CCT curve precipitation start temperature
-critical_Tf=250;  %% precipitation ending temperature
-critical_qunching_rate1=-35;
-critical_qunching_rate2=-18;
-critical_tm=(critical_Tm-critical_Ti)/critical_qunching_rate1;
-critical_tf=(critical_Tf-critical_Tm)/critical_qunching_rate2+critical_tm;
+prompt1={'Number of stages for stamping:','Numer of stage for qunching','Forming speed','Stroke','Initial T'};
+dlg_title1='Input';
+defaultans1={'11','11','250','25','490'};
+answer1=inputdlg(prompt1,dlg_title1,1,defaultans1);
+stages_of_stamping=str2double(answer1{1});
+stages_of_qunching=str2double(answer1{2});
+Forming_speed=str2double(answer1{3});
+Stroke=str2double(answer1{4});
+cT0=str2double(answer1{5});
 
-k1=critical_qunching_rate1;
-k2=critical_qunching_rate2;
-b1=critical_Ti;
-b2=critical_Tm;
+prompt2={'t1','T1','t2','T2'};
+dlg_title2='Input';
+defaultans2={'4','350','9','250'};
+answer2=inputdlg(prompt2,dlg_title2,1,defaultans2);
+ct1=str2double(answer2{1});
+cT1=str2double(answer2{2});
+ct2=str2double(answer2{3});
+cT2=str2double(answer2{4});
+
+critical_Ti=cT0;
+critical_Tm=cT1;  %% CCT curve precipitation start temperature
+critical_Tf=cT2;  %% precipitation ending temperature
+critical_tm=ct1;
+critical_tf=ct2;
+k1=-(cT0-cT1)/ct1
+k2=-(cT1-cT2)/(ct2-ct1)
+b1=cT0;
+b2=cT1;
+
 
 time_FE1=[0:stages_of_stamping-1]/stages_of_stamping*(Stroke/Forming_speed);
 time_FE2=[1:stages_of_qunching-1]+(Stroke/Forming_speed);
@@ -45,18 +62,30 @@ for i=1:element_number
 end
 plot(fit0,'*r')
 %-----------------------------------------
-%plot(time_FE,Critical_temperature,'*r')
 ylim([0,Max_T+30])
 title('All Elements')
 hold off
 %---------------------------------------------
+t1_step2=max(find(sort([time_FE,ct1])==ct1));
+t1_step1=t1_step2-1;
+t2_step2=max(find(sort([time_FE,ct2])==ct2));
+t2_step1=t2_step2-1;
+t1_t1=time_FE(t1_step1);
+t1_t2=time_FE(t1_step2);
+t2_t1=time_FE(t2_step1);
+t2_t2=time_FE(t2_step2);
 
 figure
 hold on
-Critical_temperature=Critical_temperature';
 Filter_ele=ones(element_number,1);
 for i=1:element_number
-    if sum(Tdata(i,:)>Critical_temperature)~=0
+    t1_T1=Tdata(i,t1_step1);
+    t1_T2=Tdata(i,t1_step2);
+    T1=((t1_T2-t1_T1)/(t1_t2-t1_t1)*(ct1-t1_t1)+t1_T1);
+    t2_T1=Tdata(i,t2_step1);
+    t2_T2=Tdata(i,t2_step2);
+    T2=((t2_T2-t2_T1)/(t2_t2-t2_t1)*(ct2-t2_t1)+t2_T1);
+    if T1>cT1 | T2>cT2
         Filter_ele(i)=0;
     else
     T_mod=Tdata(i,:);
@@ -93,3 +122,4 @@ hold off
             fclose(fileID);    
     delete 'point1.txt'
 disp('finish')
+
